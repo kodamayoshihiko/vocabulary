@@ -267,7 +267,7 @@ export class VocabApp {
           return `${isSelected ? '>' : ' '}${letter} ${choice}`;
         }).join('\n');
         
-        return `Q${progress}\n${q.word}\n\n${choicesLines}`;
+        return `Q${progress}\n${q.word}\n${choicesLines}`;
       }
 
       case 'FEEDBACK': {
