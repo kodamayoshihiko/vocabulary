@@ -44,7 +44,18 @@ export class VocabApp {
       if (!response.ok) {
         throw new Error(`Failed to load quiz data: ${response.statusText}`);
       }
-      this.allQuestions = await response.json();
+      const rawQuestions: any[] = await response.json();
+      this.allQuestions = rawQuestions.map((q) => {
+        // Construct choices dynamically from wrong1/wrong2/wrong3 if choices array is missing
+        const choices = q.choices || [q.answer, q.wrong1, q.wrong2, q.wrong3].filter((item: any) => item !== undefined);
+        return {
+          id: q.id,
+          word: q.word,
+          pos: q.pos,
+          answer: q.answer,
+          choices: choices
+        };
+      });
     } catch (e) {
       console.error(e);
       this.allQuestions = [];
