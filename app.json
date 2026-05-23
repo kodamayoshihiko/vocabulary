@@ -1,7 +1,13 @@
 {
-  "id": "vocab-quiz",
+  "package_id": "com.ontheecho.vocabquiz",
   "name": "Vocab Quiz",
   "version": "1.0.0",
-  "description": "Vocabulary 4-choice quiz app for Even G2",
-  "icon": "icon.png"
+  "edition": "202601",
+  "description": "Vocabulary four-choice quiz app for Even G2.",
+  "icon": "icon.png",
+  "entrypoint": "index.html",
+  "min_app_version": "1.0.0",
+  "min_sdk_version": "0.0.10",
+  "permissions": [],
+  "supported_languages": ["en"]
 }
