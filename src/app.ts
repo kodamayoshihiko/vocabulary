@@ -164,9 +164,9 @@ export class VocabApp {
   private startNew20Session() {
     if (this.allQuestions.length === 0) return;
     
-    // Select up to 20 random unique questions
+    // Select up to 10 random unique questions
     const shuffled = [...this.allQuestions].sort(() => Math.random() - 0.5);
-    this.sessionQuestions = shuffled.slice(0, Math.min(20, shuffled.length));
+    this.sessionQuestions = shuffled.slice(0, Math.min(10, shuffled.length));
     
     this.currentQuestionIndex = 0;
     this.score = 0;
@@ -184,7 +184,7 @@ export class VocabApp {
     }
 
     const shuffled = [...wrongPool].sort(() => Math.random() - 0.5);
-    this.sessionQuestions = shuffled.slice(0, Math.min(20, shuffled.length));
+    this.sessionQuestions = shuffled.slice(0, Math.min(10, shuffled.length));
     
     this.currentQuestionIndex = 0;
     this.score = 0;
@@ -253,7 +253,7 @@ export class VocabApp {
   public getDisplayText(): string {
     switch (this.screenState) {
       case 'HOME':
-        return `Vocab Quiz\n\n${this.homeMenuIndex === 0 ? '> New 20' : '  New 20'}\n${this.homeMenuIndex === 1 ? '> Wrong 20' : '  Wrong 20'}`;
+        return `Vocab Quiz\n\n${this.homeMenuIndex === 0 ? '> New 10' : '  New 10'}\n${this.homeMenuIndex === 1 ? '> Wrong 10' : '  Wrong 10'}`;
       
       case 'NO_WRONG_WORDS':
         return `No wrong words\n\nClick: Home`;
