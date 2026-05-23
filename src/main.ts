@@ -27,131 +27,241 @@ const btnResetStorage = document.getElementById('btn-reset-storage');
 
 let bridge: any = null;
 
-// Helper to recursively check if a target value is present anywhere in an object
-function hasTargetValue(obj: any, targets: any[]): boolean {
-  let found = false;
+// Extract raw eventType value following the prioritized reading order
+function getRawEventType(event: any): any {
+  if (!event) return undefined;
   
-  function check(item: any) {
-    if (found || item === null || item === undefined) return;
+  if (event.sysEvent && event.sysEvent.eventType !== undefined) {
+    return event.sysEvent.eventType;
+  }
+  if (event.textEvent && event.textEvent.eventType !== undefined) {
+    return event.textEvent.eventType;
+  }
+  if (event.listEvent && event.listEvent.eventType !== undefined) {
+    return event.listEvent.eventType;
+  }
+  if (event.audioEvent && event.audioEvent.eventType !== undefined) {
+    return event.audioEvent.eventType;
+  }
+  if (event.eventType !== undefined) {
+    return event.eventType;
+  }
+  if (event.type !== undefined) {
+    return event.type;
+  }
+
+  // Fallback: search key names representing event type recursively
+  let foundVal: any = undefined;
+  const targetKeys = ['eventtype', 'oseventtype', 'syseventtype', 'type', 'code', 'gesture', 'action'];
+
+  function traverse(item: any) {
+    if (foundVal !== undefined || item === null || item === undefined) return;
     if (typeof item === 'object') {
       for (const key in item) {
         if (Object.prototype.hasOwnProperty.call(item, key)) {
-          check(item[key]);
-        }
-      }
-    } else {
-      const valStr = String(item).toLowerCase();
-      for (const target of targets) {
-        if (item === target || String(item) === String(target) || valStr === String(target).toLowerCase()) {
-          found = true;
-          return;
+          const keyLower = key.toLowerCase();
+          if (targetKeys.includes(keyLower)) {
+            foundVal = item[key];
+            return;
+          }
+          traverse(item[key]);
         }
       }
     }
   }
-  
-  check(obj);
-  return found;
+
+  traverse(event);
+  return foundVal;
 }
 
-// Helper to recursively detect the event source, looking for 'Ring' or 'Glasses'
-function detectEventSource(obj: any): 'Glasses Left' | 'Glasses Right' | 'Ring' | 'Unknown' {
-  if (obj === null || obj === undefined) return 'Unknown';
-  
-  let hasRing = false;
-  let hasGlassesL = false;
-  let hasGlassesR = false;
+// Extract raw eventSource value following the prioritized reading order
+function getRawEventSource(event: any): any {
+  if (!event) return undefined;
+  if (event.sysEvent && event.sysEvent.eventSource !== undefined) {
+    return event.sysEvent.eventSource;
+  }
+  if (event.textEvent && event.textEvent.eventSource !== undefined) {
+    return event.textEvent.eventSource;
+  }
+  if (event.listEvent && event.listEvent.eventSource !== undefined) {
+    return event.listEvent.eventSource;
+  }
+  if (event.audioEvent && event.audioEvent.eventSource !== undefined) {
+    return event.audioEvent.eventSource;
+  }
+  if (event.eventSource !== undefined) {
+    return event.eventSource;
+  }
+  if (event.source !== undefined) {
+    return event.source;
+  }
 
-  function traverse(item: any, parentKey?: string) {
-    if (item === null || item === undefined) return;
+  // Fallback: search key names representing event source recursively
+  let foundVal: any = undefined;
+  const targetKeys = ['eventsource', 'source'];
+
+  function traverse(item: any) {
+    if (foundVal !== undefined || item === null || item === undefined) return;
     if (typeof item === 'object') {
       for (const key in item) {
         if (Object.prototype.hasOwnProperty.call(item, key)) {
-          traverse(item[key], key);
-        }
-      }
-    } else {
-      const valStr = String(item).toLowerCase();
-      if (valStr.includes('ring')) {
-        hasRing = true;
-      }
-      if (parentKey === 'eventSource') {
-        if (item === EventSourceType.TOUCH_EVENT_FROM_RING || item === 2 || item === '2' || valStr.includes('ring')) {
-          hasRing = true;
-        } else if (item === EventSourceType.TOUCH_EVENT_FROM_GLASSES_L || item === 3 || item === '3' || valStr.includes('glasses_l')) {
-          hasGlassesL = true;
-        } else if (item === EventSourceType.TOUCH_EVENT_FROM_GLASSES_R || item === 1 || item === '1' || valStr.includes('glasses_r')) {
-          hasGlassesR = true;
+          const keyLower = key.toLowerCase();
+          if (targetKeys.includes(keyLower)) {
+            foundVal = item[key];
+            return;
+          }
+          traverse(item[key]);
         }
       }
     }
   }
 
-  traverse(obj);
+  traverse(event);
+  return foundVal;
+}
 
-  if (hasRing) return 'Ring';
-  if (hasGlassesL) return 'Glasses Left';
-  if (hasGlassesR) return 'Glasses Right';
+// Get readable labels for eventSource
+function getEventSourceLabel(event: any): string {
+  const sourceVal = getRawEventSource(event);
   
+  if (sourceVal !== undefined) {
+    const valStr = String(sourceVal).toLowerCase();
+    
+    // Check for Ring
+    if (
+      sourceVal === 2 || 
+      sourceVal === '2' || 
+      sourceVal === EventSourceType.TOUCH_EVENT_FROM_RING || 
+      valStr === 'touch_event_from_ring' || 
+      valStr.includes('ring')
+    ) {
+      return 'Ring';
+    }
+    
+    // Check for Glasses Left
+    if (
+      sourceVal === 3 ||
+      sourceVal === '3' ||
+      sourceVal === EventSourceType.TOUCH_EVENT_FROM_GLASSES_L ||
+      valStr === 'touch_event_from_glasses_l' ||
+      valStr.includes('glasses_l') ||
+      valStr.includes('left')
+    ) {
+      return 'Glasses Left';
+    }
+
+    // Check for Glasses Right
+    if (
+      sourceVal === 1 ||
+      sourceVal === '1' ||
+      sourceVal === EventSourceType.TOUCH_EVENT_FROM_GLASSES_R ||
+      valStr === 'touch_event_from_glasses_r' ||
+      valStr.includes('glasses_r') ||
+      valStr.includes('right')
+    ) {
+      return 'Glasses Right';
+    }
+  }
+
+  // Fallback: check if "ring" keyword is anywhere in the object values
+  let hasRingString = false;
+  function traverseRing(item: any) {
+    if (hasRingString || item === null || item === undefined) return;
+    if (typeof item === 'object') {
+      for (const key in item) {
+        if (Object.prototype.hasOwnProperty.call(item, key)) {
+          traverseRing(item[key]);
+        }
+      }
+    } else if (typeof item === 'string') {
+      if (item.toLowerCase().includes('ring')) {
+        hasRingString = true;
+      }
+    }
+  }
+  traverseRing(event);
+  
+  if (hasRingString) {
+    return 'Ring';
+  }
+
   return 'Unknown';
 }
 
-// Get readable labels for eventType and eventSource
-function getEventSourceLabel(event: any): string {
-  return detectEventSource(event);
-}
-
 function getEventTypeLabel(event: any): string {
-  if (!event) return 'undefined';
+  const typeVal = getRawEventType(event);
+  if (typeVal === undefined) return 'undefined';
   
-  if (
-    event.sysEvent?.double_click === true ||
-    hasTargetValue(event, [OsEventTypeList.DOUBLE_CLICK_EVENT, 3, 'DOUBLE_CLICK_EVENT', 'DOUBLE_CLICK'])
-  ) {
-    return 'DOUBLE_CLICK_EVENT';
+  const norm = OsEventTypeList.fromJson(typeVal);
+  if (norm !== undefined) {
+    return OsEventTypeList[norm] || String(typeVal);
   }
-  if (hasTargetValue(event, [OsEventTypeList.SCROLL_TOP_EVENT, 1, 'SCROLL_TOP_EVENT', 'SCROLL_TOP'])) {
-    return 'SCROLL_TOP_EVENT';
-  }
-  if (hasTargetValue(event, [OsEventTypeList.SCROLL_BOTTOM_EVENT, 2, 'SCROLL_BOTTOM_EVENT', 'SCROLL_BOTTOM'])) {
-    return 'SCROLL_BOTTOM_EVENT';
-  }
-  if (hasTargetValue(event, [OsEventTypeList.CLICK_EVENT, 0, 'CLICK_EVENT', 'CLICK', 'RING_CLICK_EVENT', 'RING_CLICK'])) {
-    return 'CLICK_EVENT';
-  }
-  
-  return 'undefined';
+  return String(typeVal);
 }
 
 // Normalize Even G2 gestures
 function parseG2Event(event: any): 'click' | 'double_click' | 'swipe_up' | 'swipe_down' | null {
   if (!event) return null;
 
-  // 1. Double Click checks
+  // Let's first check sysEvent.double_click as it is an explicit boolean flag
+  if (event.sysEvent?.double_click === true) {
+    return 'double_click';
+  }
+
+  const typeVal = getRawEventType(event);
+  if (typeVal === undefined) {
+    // Fallback: if sysEvent exists or source is Ring, treat as click
+    if (event.sysEvent !== undefined || getEventSourceLabel(event) === 'Ring') {
+      return 'click';
+    }
+    return null;
+  }
+
+  const valStr = String(typeVal).toLowerCase();
+
+  // double_click: 3 or "DOUBLE_CLICK_EVENT" or "DOUBLE_CLICK"
   if (
-    event.sysEvent?.double_click === true ||
-    hasTargetValue(event, [OsEventTypeList.DOUBLE_CLICK_EVENT, 3, 'DOUBLE_CLICK_EVENT', 'DOUBLE_CLICK'])
+    typeVal === 3 || 
+    typeVal === '3' || 
+    typeVal === OsEventTypeList.DOUBLE_CLICK_EVENT ||
+    valStr === 'double_click_event' || 
+    valStr === 'double_click'
   ) {
     return 'double_click';
   }
 
-  // 2. Swipe Up checks
-  if (hasTargetValue(event, [OsEventTypeList.SCROLL_TOP_EVENT, 1, 'SCROLL_TOP_EVENT', 'SCROLL_TOP'])) {
+  // swipe_up: 1 or "SCROLL_TOP_EVENT" or "SCROLL_TOP"
+  if (
+    typeVal === 1 || 
+    typeVal === '1' || 
+    typeVal === OsEventTypeList.SCROLL_TOP_EVENT ||
+    valStr === 'scroll_top_event' || 
+    valStr === 'scroll_top'
+  ) {
     return 'swipe_up';
   }
 
-  // 3. Swipe Down checks
-  if (hasTargetValue(event, [OsEventTypeList.SCROLL_BOTTOM_EVENT, 2, 'SCROLL_BOTTOM_EVENT', 'SCROLL_BOTTOM'])) {
+  // swipe_down: 2 or "SCROLL_BOTTOM_EVENT" or "SCROLL_BOTTOM"
+  if (
+    typeVal === 2 || 
+    typeVal === '2' || 
+    typeVal === OsEventTypeList.SCROLL_BOTTOM_EVENT ||
+    valStr === 'scroll_bottom_event' || 
+    valStr === 'scroll_bottom'
+  ) {
     return 'swipe_down';
   }
 
-  // 4. Click checks
-  if (hasTargetValue(event, [OsEventTypeList.CLICK_EVENT, 0, 'CLICK_EVENT', 'CLICK', 'RING_CLICK_EVENT', 'RING_CLICK'])) {
-    return 'click';
-  }
-
-  // 5. Fallback click anomaly (e.g. if we have a sysEvent or ring source, but type is undefined, treat as click)
-  if (event.sysEvent !== undefined || detectEventSource(event) === 'Ring') {
+  // click: 0 or "CLICK_EVENT" or "CLICK" or "RING_CLICK_EVENT" or "RING_CLICK"
+  if (
+    typeVal === 0 || 
+    typeVal === '0' || 
+    typeVal === OsEventTypeList.CLICK_EVENT ||
+    valStr === 'click_event' || 
+    valStr === 'click' || 
+    valStr === 'ring_click_event' || 
+    valStr === 'ring_click'
+  ) {
     return 'click';
   }
 
