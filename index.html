@@ -1,16 +1,70 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vocabulary Web App</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vocab Quiz - Even G2 Simulator</title>
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="app">
-        <h1>Vocabulary App</h1>
-        <p>単語帳アプリへようこそ！</p>
+  <div class="simulator-container">
+    <header class="app-header">
+      <h1>Vocab Quiz</h1>
+      <p class="subtitle">Even G2 Smart Glasses Developer Simulator</p>
+    </header>
+
+    <div class="workspace">
+      <!-- Even G2 Viewport Simulator -->
+      <div class="g2-frame">
+        <div class="g2-lens">
+          <div id="g2-screen" class="g2-screen">
+            <!-- This will contain exactly what the Even G2 screen displays -->
+            <div id="g2-content" class="g2-content">
+              Loading...
+            </div>
+          </div>
+        </div>
+        <div class="g2-label">EVEN G2 HUD PREVIEW</div>
+      </div>
+
+      <!-- Simulator Control Panel & Guide -->
+      <div class="control-panel">
+        <h2>Developer Console</h2>
+        
+        <div class="panel-section">
+          <h3>Keyboard Controls</h3>
+          <ul class="controls-list">
+            <li><kbd>▲</kbd> / <kbd>▼</kbd> : Swipe Up / Down (Navigate)</li>
+            <li><kbd>Enter</kbd> : Single Click (Select / Next)</li>
+            <li><kbd>Esc</kbd> : Double Click (Back to Home)</li>
+          </ul>
+        </div>
+        
+        <div class="panel-section">
+          <h3>Interactive Actions</h3>
+          <div class="simulation-buttons">
+            <button id="btn-swipe-up" class="sim-btn">Swipe Up</button>
+            <button id="btn-swipe-down" class="sim-btn">Swipe Down</button>
+            <button id="btn-click" class="sim-btn primary">Click</button>
+            <button id="btn-double-click" class="sim-btn danger">Double Click (Home)</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3>App Diagnostic Info</h3>
+          <div class="state-info">
+            <p><strong>Screen State:</strong> <span id="state-screen">INITIALIZING</span></p>
+            <p><strong>Total Words Seen:</strong> <span id="state-seen-words">0</span></p>
+            <p><strong>Wrong Words List:</strong> <span id="state-wrong-count">0</span></p>
+          </div>
+          <button id="btn-reset-storage" class="sim-btn outline">Clear localStorage</button>
+        </div>
+      </div>
     </div>
-    <script src="script.js"></script>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
