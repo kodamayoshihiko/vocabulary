@@ -2,7 +2,9 @@ import {
   waitForEvenAppBridge, 
   TextContainerProperty, 
   CreateStartUpPageContainer, 
-  TextContainerUpgrade 
+  TextContainerUpgrade,
+  OsEventTypeList,
+  EventSourceType
 } from '@evenrealities/even_hub_sdk';
 import { VocabApp } from './app';
 import { clearStorageData, getEverWrongWordIds, getStorageData } from './storage';
@@ -25,24 +27,56 @@ const btnResetStorage = document.getElementById('btn-reset-storage');
 
 let bridge: any = null;
 
+// Get readable labels for eventType and eventSource
+function getEventSourceLabel(source: any): string {
+  const norm = EventSourceType.fromJson(source);
+  switch (norm) {
+    case EventSourceType.TOUCH_EVENT_FROM_GLASSES_L:
+      return 'Glasses Left';
+    case EventSourceType.TOUCH_EVENT_FROM_GLASSES_R:
+      return 'Glasses Right';
+    case EventSourceType.TOUCH_EVENT_FROM_RING:
+      return 'Ring';
+    default:
+      return source !== undefined ? String(source) : 'Unknown';
+  }
+}
+
+function getEventTypeLabel(type: any): string {
+  const norm = OsEventTypeList.fromJson(type);
+  if (norm !== undefined) {
+    return OsEventTypeList[norm] || String(type);
+  }
+  return type !== undefined ? String(type) : 'undefined';
+}
+
 // Normalize Even G2 gestures
 function parseG2Event(event: any): 'click' | 'double_click' | 'swipe_up' | 'swipe_down' | null {
   if (!event || !event.sysEvent) return null;
   const sys = event.sysEvent;
   
-  if (sys.double_click === true || sys.eventType === 3) {
+  // Safely normalize eventType using SDK methods
+  let normType = OsEventTypeList.fromJson(sys.eventType);
+  
+  // Fallback for single tap tap/click anomaly on physical hardware
+  if (normType === undefined && sys.eventType === undefined) {
+    normType = OsEventTypeList.CLICK_EVENT;
+  }
+  
+  // Check double_click flag
+  if (sys.double_click === true || normType === OsEventTypeList.DOUBLE_CLICK_EVENT) {
     return 'double_click';
   }
   
-  if (sys.eventType === 1) {
+  if (normType === OsEventTypeList.SCROLL_TOP_EVENT) {
     return 'swipe_up';
   }
   
-  if (sys.eventType === 2) {
+  if (normType === OsEventTypeList.SCROLL_BOTTOM_EVENT) {
     return 'swipe_down';
   }
   
-  if (sys.eventType === 0 || sys.eventType === undefined) {
+  if (normType === OsEventTypeList.CLICK_EVENT) {
     return 'click';
   }
   
@@ -135,7 +169,19 @@ async function start() {
     // Listen for hardware interactions
     bridge.onEvenHubEvent((event: any) => {
       const gesture = parseG2Event(event);
-      console.log('G2 Gesture Event:', gesture, event);
+      
+      const sys = event?.sysEvent || {};
+      const typeLabel = getEventTypeLabel(sys.eventType);
+      const sourceLabel = getEventSourceLabel(sys.eventSource);
+      
+      // Update HTML diagnostic UI
+      const stateLastEventEl = document.getElementById('state-last-event');
+      if (stateLastEventEl) {
+        stateLastEventEl.textContent = `Type: ${typeLabel} | Source: ${sourceLabel}`;
+      }
+      
+      // Log details to console
+      console.log('G2 Event Received - Gesture:', gesture, 'Type:', typeLabel, 'Source:', sourceLabel, 'Raw Event:', event);
 
       switch (gesture) {
         case 'swipe_up':
