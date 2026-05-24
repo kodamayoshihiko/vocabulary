@@ -40,7 +40,7 @@ export class VocabApp {
 
   public async init() {
     try {
-      const response = await fetch('/oxford_5000_quiz.json');
+      const response = await fetch('/eikenjun1.json');
       if (!response.ok) {
         throw new Error(`Failed to load quiz data: ${response.statusText}`);
       }

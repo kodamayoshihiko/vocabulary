@@ -4,16 +4,18 @@ A 4-choice synonym vocabulary quiz app designed for the Even G2 smart glasses.
 
 ## Requirements
 
-Ensure `public/oxford_5000_quiz.json` is placed in the project root's `public` directory. (Note: This file is already configured inside this workspace and does not need to be modified).
+Ensure `public/eikenjun1.json` is placed in the project root's `public` directory. (Note: This file is already configured inside this workspace and does not need to be modified).
 The format of the JSON should be:
 ```json
 [
   {
-    "id": "b2_0001",
-    "word": "absorb",
-    "pos": "v.",
-    "answer": "take in",
-    "choices": ["take in", "trigger", "discard", "include"]
+    "id": "10001",
+    "word": "replaceable",
+    "pos": "形容詞",
+    "answer": "置き換えられる",
+    "wrong1": "思いやりのある",
+    "wrong2": "共感的な",
+    "wrong3": "自発的な"
   }
 ]
 ```
