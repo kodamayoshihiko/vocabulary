@@ -92,8 +92,8 @@ export class VocabApp {
         this.homeMenuIndex = this.homeMenuIndex === 0 ? 1 : 0;
         break;
       case 'QUIZ':
-        // Move choice up (0 -> 3 -> 2 -> 1 -> 0)
-        this.quizChoiceIndex = (this.quizChoiceIndex - 1 + 4) % 4;
+        // Move choice up
+        this.quizChoiceIndex = (this.quizChoiceIndex - 1 + this.shuffledChoices.length) % this.shuffledChoices.length;
         break;
       case 'RESULT':
         // Only if not perfect (which shows Retry wrong and Home)
@@ -112,7 +112,7 @@ export class VocabApp {
         break;
       case 'QUIZ':
         // Move choice down
-        this.quizChoiceIndex = (this.quizChoiceIndex + 1) % 4;
+        this.quizChoiceIndex = (this.quizChoiceIndex + 1) % this.shuffledChoices.length;
         break;
       case 'RESULT':
         if (this.score < this.sessionQuestions.length) {
@@ -232,6 +232,8 @@ export class VocabApp {
       const j = Math.floor(Math.random() * (i + 1));
       [this.shuffledChoices[i], this.shuffledChoices[j]] = [this.shuffledChoices[j], this.shuffledChoices[i]];
     }
+    // Append "分からない" (Don't know) as the final choice
+    this.shuffledChoices.push("分からない");
 
     this.quizChoiceIndex = 0;
     this.screenState = 'QUIZ';
@@ -283,11 +285,8 @@ export class VocabApp {
 
       case 'FEEDBACK': {
         const q = this.sessionQuestions[this.currentQuestionIndex];
-        if (this.lastAnswerWasCorrect) {
-          return `Correct\n\nClick: next`;
-        } else {
-          return `Wrong\nAns: ${q.answer}\n\nClick: next`;
-        }
+        const status = this.lastAnswerWasCorrect ? 'Correct' : 'Wrong';
+        return `${status}\nWord: ${q.word}\nAns: ${q.answer}\n\nClick: next`;
       }
 
       case 'RESULT': {
