@@ -27,21 +27,47 @@ const btnResetStorage = document.getElementById('btn-reset-storage');
 
 let bridge: any = null;
 
-// Extract raw eventType value following the prioritized reading order
+// Extract raw eventType value following the prioritized reading order:
+// 1. textEvent.eventType
+// 2. listEvent.eventType
+// 3. jsonData.eventType
+// 4. audioEvent.eventType
+// 5. sysEvent.eventType
+// 6. top-level eventType
+// 7. top-level type
 function getRawEventType(event: any): any {
   if (!event) return undefined;
   
-  if (event.sysEvent && event.sysEvent.eventType !== undefined) {
-    return event.sysEvent.eventType;
-  }
   if (event.textEvent && event.textEvent.eventType !== undefined) {
     return event.textEvent.eventType;
   }
   if (event.listEvent && event.listEvent.eventType !== undefined) {
     return event.listEvent.eventType;
   }
+  
+  // Safely extract jsonData.eventType
+  let jsonDataTypeVal: any = undefined;
+  if (event.jsonData) {
+    if (typeof event.jsonData === 'object' && event.jsonData.eventType !== undefined) {
+      jsonDataTypeVal = event.jsonData.eventType;
+    } else if (typeof event.jsonData === 'string') {
+      try {
+        const parsed = JSON.parse(event.jsonData);
+        if (parsed && parsed.eventType !== undefined) {
+          jsonDataTypeVal = parsed.eventType;
+        }
+      } catch (e) {}
+    }
+  }
+  if (jsonDataTypeVal !== undefined) {
+    return jsonDataTypeVal;
+  }
+
   if (event.audioEvent && event.audioEvent.eventType !== undefined) {
     return event.audioEvent.eventType;
+  }
+  if (event.sysEvent && event.sysEvent.eventType !== undefined) {
+    return event.sysEvent.eventType;
   }
   if (event.eventType !== undefined) {
     return event.eventType;
@@ -200,7 +226,7 @@ function getEventTypeLabel(event: any): string {
 }
 
 // Normalize Even G2 gestures
-function parseG2Event(event: any): 'click' | 'double_click' | 'swipe_up' | 'swipe_down' | null {
+function parseG2Event(event: any): 'click' | 'double_click' | 'swipe_up' | 'swipe_down' | 'foreground_enter' | null {
   if (!event) return null;
 
   // Let's first check sysEvent.double_click as it is an explicit boolean flag
@@ -263,6 +289,16 @@ function parseG2Event(event: any): 'click' | 'double_click' | 'swipe_up' | 'swip
     valStr === 'ring_click'
   ) {
     return 'click';
+  }
+
+  // foreground_enter: 4 or "FOREGROUND_ENTER_EVENT"
+  if (
+    typeVal === 4 ||
+    typeVal === '4' ||
+    valStr === 'foreground_enter_event' ||
+    valStr === 'foreground_enter'
+  ) {
+    return 'foreground_enter';
   }
 
   return null;
@@ -385,6 +421,10 @@ async function start() {
           break;
         case 'double_click':
           app.handleDoubleClick();
+          break;
+        case 'foreground_enter':
+          // Ignored for functional quiz actions
+          console.log('Foreground enter event detected (ignored for quiz navigation).');
           break;
       }
     });
